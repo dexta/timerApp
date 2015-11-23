@@ -38,30 +38,17 @@ button:hover {
   #container { width: 1000px;}
   #timer { font-size: 84px; }
 }
-
 </style>
 <body>
 <div id="container">
   <audio controls id="player">
     <source src="icq_horn.mp4" type="audio/mp4">
-    Your browser does not support the audio element.
   </audio>
   <div><input type="file" id="filename" onChange="getNewFilen()"></div>
   <h1 id="timer">00:00</h1>
   <input type="text" id="freeValue" class="hidden" value="300" placeholder="time in sec" onfocusout="parseTime()">
   <h5>Timer is set to <span id="counter">300</span></h5>
-  <div id="guiEl">
-    <button id="startTimer">start Timer</button>
-    <button id="stopTimer">stop Timer</button>
-    <br />
-    <button id="plus_300" title="set timer to 5 min">5min</button>
-    <button id="plus_900">15min</button>
-    <button id="plus_3600">1std</button>
-    <button id="plus_14400">4std</button>
-    <button id="plus_28800">8std</button>
-    <button id="plus_86400">1tag</button>
-    <button id="plus_172800">2tage</button>
-  </div>
+  <div id="guiEl"></div>
 </div>
 <script type="text/javascript">
 
@@ -69,6 +56,17 @@ var timestamp = 0;
 var timecount = 300;
 var counterID = 0;
 var localData = [];
+var btnList = { "startTimer":"start Timer","stopTimer":"stop Timer","plus_300":"5 min","plus_900":"15 min","plus_3600":"1 std","plus_14400":"4 std","plus_28800":"8 std","plus_86400":"1 tag","plus_172800":"2 tage"};
+
+function genButtons() {
+  var el;
+  for(var k in btnList) {
+    el = document.createElement('button');
+    el.setAttribute('id',k);
+    el.innerHTML = btnList[k];
+    $("#guiEl").appendChild(el);
+  }
+}
 
 function timeInSec() {
   return parseInt(new Date().getTime()/1000);
@@ -90,7 +88,7 @@ function formateTime(tSec) {
 function parseTime() {
   var tStr = $("#freeValue").value.split(/:|\.|\,|\s/);
   var sL = tStr.length;
-  console.log("how long "+sL);
+
   if(sL===1 && parseInt(tStr)>=2) {
     updateTimecount(parseInt(tStr));
     return false;
@@ -98,20 +96,14 @@ function parseTime() {
   var t=0;var h=0;var m=0;var s=0;
   var rSec = 0;
   if(sL===2) {
-    m = tStr[0];
-    s = tStr[1];
+    m = tStr[0];  s = tStr[1];
   } else if(sL===3) {
-    h = tStr[0];
-    m = tStr[1];
-    s = tStr[2];
+    h = tStr[0];  m = tStr[1];  s = tStr[2];
   } else if(sL===4) {
-    t = tStr[0];
-    h = tStr[1];
-    m = tStr[2];
-    s = tStr[3];    
+    t = tStr[0];  h = tStr[1];  m = tStr[2];  s = tStr[3];    
   }
   rSec = (parseInt(t)*86400)+(parseInt(h)*3600)+(parseInt(m)*60)+parseInt(s);
-  console.log("how many "+rSec);
+
   updateTimecount(rSec);
   $("#freeValue").className = "hidden";
   return false;
@@ -130,7 +122,6 @@ function stopInterval() {
 }
 
 function clickButton(id){
-  console.log("click on "+id);
   var mBtn = id.split("_");
   if(id==='startTimer') {
     startTimer();
@@ -180,15 +171,13 @@ function playSound() {
   document.getElementById('player').play();
 }
 
-document.addEventListener('DOMContentLoaded', function(){
+document.addEventListener('DOMContentLoaded', function(){  
+  genButtons();
   var group = document.getElementById('guiEl');
-  var btns = group.getElementsByTagName('button');
-  // var btns = $("#guiEl button");
-  for(var x = 0,xl=btns.length-1;x<xl;x++) {
-    btns[x].addEventListener('click',function(){
-      clickButton(this.id);
-    });
-  }
+  group.addEventListener("click",function(event){
+    event.stopPropagation();
+    clickButton(event.target.id);
+  });
 
   $("#timer").addEventListener('click',function(){
     $("#freeValue").className = "";
