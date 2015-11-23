@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>simple timer app</title>
+  <meta name="description" content="app to remind me to do somethink">
+  <meta name="author" content="dexta">
+</head>
+<style type="text/css">
+#container {
+  margin: 0 auto;
+  width: 95%;
+  text-align: center;
+}
+button {
+  background: #3498db;
+  border-radius: 28px;
+  color: #ffffff;
+  font-size: 42px;
+  padding: 10px 20px 10px 20px;
+  text-decoration: none;
+}
+button:hover {
+  background: #3cb0fd;
+  text-decoration: none;
+}
+#timer {
+  font-size: 64px;
+}
+.hidden {
+  display: none;
+}
+@media screen and (min-width: 600px) {
+  #container { width: 550px;}
+  #timer { font-size: 75px; }
+}
+@media screen and (min-width: 1000px) {
+  #container { width: 1000px;}
+  #timer { font-size: 84px; }
+}
+
+</style>
+<body>
+<div id="container">
+  <audio controls id="player">
+    <source src="icq_horn.mp4" type="audio/mp4">
+    Your browser does not support the audio element.
+  </audio>
+  <div><input type="file" id="filename" onChange="getNewFilen()"></div>
+  <h1 id="timer">00:00</h1>
+  <input type="text" id="freeValue" class="hidden" value="300" placeholder="time in sec" onfocusout="parseTime()">
+  <h5>Timer is set to <span id="counter">300</span></h5>
+  <div id="guiEl">
+    <button id="startTimer">start Timer</button>
+    <button id="stopTimer">stop Timer</button>
+    <br />
+    <button id="plus_300" title="set timer to 5 min">5min</button>
+    <button id="plus_900">15min</button>
+    <button id="plus_3600">1std</button>
+    <button id="plus_14400">4std</button>
+    <button id="plus_28800">8std</button>
+    <button id="plus_86400">1tag</button>
+    <button id="plus_172800">2tage</button>
+  </div>
+</div>
+<script type="text/javascript">
+
+var timestamp = 0;
+var timecount = 300;
+var counterID = 0;
+var localData = [];
+
+function timeInSec() {
+  return parseInt(new Date().getTime()/1000);
+}
+
+function formateTime(tSec) {
+  var s = tSec%60;
+  var m = ((tSec-s)/60)%60;
+  var h = parseInt((tSec-(m*60)-s)/3600);
+  if(h>=24) {
+    t = parseInt(h/24);
+    h = (h-(t*24))%24;
+    return t+"T . "+("0"+h).slice(-2)+":"+("0"+m).slice(-2)+":"+("0"+s).slice(-2);
+  } else {
+    return ("0"+h).slice(-2)+":"+("0"+m).slice(-2)+":"+("0"+s).slice(-2);
+  }
+}
+
+function parseTime() {
+  var tStr = $("#freeValue").value.split(/:|\.|\,|\s/);
+  var sL = tStr.length;
+  console.log("how long "+sL);
+  if(sL===1 && parseInt(tStr)>=2) {
+    updateTimecount(parseInt(tStr));
+    return false;
+  }
+  var t=0;var h=0;var m=0;var s=0;
+  var rSec = 0;
+  if(sL===2) {
+    m = tStr[0];
+    s = tStr[1];
+  } else if(sL===3) {
+    h = tStr[0];
+    m = tStr[1];
+    s = tStr[2];
+  } else if(sL===4) {
+    t = tStr[0];
+    h = tStr[1];
+    m = tStr[2];
+    s = tStr[3];    
+  }
+  rSec = (parseInt(t)*86400)+(parseInt(h)*3600)+(parseInt(m)*60)+parseInt(s);
+  console.log("how many "+rSec);
+  updateTimecount(rSec);
+  $("#freeValue").className = "hidden";
+  return false;
+}
+
+function startInterval() {
+  stopInterval();
+  counterID = setInterval(timerUpdate,500);
+}
+
+function stopInterval() {
+  if(counterID===0) return;
+  clearInterval(counterID);
+  counterID = 0;
+  return;
+}
+
+function clickButton(id){
+  console.log("click on "+id);
+  var mBtn = id.split("_");
+  if(id==='startTimer') {
+    startTimer();
+  } else if(id==='stopTimer') {
+    stopTimer();
+  } else if(mBtn[0]==='plus') {
+    updateTimecount(parseInt(mBtn[1]));
+  }
+}
+
+function updateTimecount(insec) {
+  $("#counter").innerHTML = formateTime(insec);
+  timecount = insec;
+}
+
+function getNewFilen() {
+  var files = document.getElementById("filename").files;
+  var file  = URL.createObjectURL(files[0]);
+  document.getElementById("player").src = file;
+}
+
+function startTimer() {
+  stopInterval();
+  timestamp = timeInSec()+timecount;
+  localData[0] = timestamp;
+  localStorage.sTimer = JSON.stringify(localData);
+  startInterval();
+}
+
+function stopTimer() {
+  stopInterval();
+}
+
+function endTimer() {
+  playSound();
+  stopInterval();
+}
+
+function timerUpdate() {
+  var nTime = timeInSec();
+  var tDiff = parseInt(timestamp-nTime);
+  if(tDiff<=0) { tDiff = 0; endTimer(); }
+  $("#timer").innerHTML = formateTime(tDiff);
+}
+
+function playSound() {
+  document.getElementById('player').play();
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  var group = document.getElementById('guiEl');
+  var btns = group.getElementsByTagName('button');
+  // var btns = $("#guiEl button");
+  for(var x = 0,xl=btns.length-1;x<xl;x++) {
+    btns[x].addEventListener('click',function(){
+      clickButton(this.id);
+    });
+  }
+
+  $("#timer").addEventListener('click',function(){
+    $("#freeValue").className = "";
+  });
+
+  localData = (localStorage.sTimer||false)? JSON.parse(localStorage.sTimer): [timeInSec()+300];
+  if(timeInSec()<localData[0]+2) { timestamp = localData[0]; startInterval();}
+}); // end of document ready event
+
+var $ = function(input) {
+  if (input.nodeName) {
+      return input;
+  }
+  var j = document.querySelectorAll(input);
+  if(j.length===1) return j[0];
+  if(j.length===0) return "nothing found";
+  var rl = [];
+  for(var r in j) {
+    rl.push(j[r]);
+  }
+  return rl;
+};
+
+</script>
+</body>
+</html>
